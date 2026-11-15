@@ -23,8 +23,25 @@ jobs:
       - run: ruff format --check .
 
   test:
-    name: Unit tests
+    name: Unit and integration tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: housing
+          POSTGRES_PASSWORD: housing
+          POSTGRES_DB: housing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U housing -d housing"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql+psycopg://housing:housing@localhost:5432/housing
+      MLFLOW_DISABLE_AGENT_HINT: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,12 +49,14 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: python -m pip install -e ".[dev]"
-      - run: pytest tests/unit --cov --cov-report=term-missing
+      - run: pytest tests/unit tests/integration -m "not dataset" --cov --cov-report=term-missing
 
   quality-gate:
     name: Train and quality gate
     runs-on: ubuntu-latest
     needs: [lint, test]
+    env:
+      MLFLOW_DISABLE_AGENT_HINT: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -54,3 +73,14 @@ jobs:
           name: model-metadata
           path: models/**/metadata.json
           if-no-files-found: error
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config --quiet
+      - run: docker build --tag california-housing-mlops:ci .
+      - run: docker run --rm california-housing-mlops:ci python -c "import housing_mlops.api.main; print('import ok')"
+      - run: docker run --rm california-housing-mlops:ci id -u | grep -qv '^0$'
