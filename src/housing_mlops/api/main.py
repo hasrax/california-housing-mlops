@@ -12,6 +12,7 @@ from housing_mlops.api.db import (
     init_db,
     make_engine,
     make_session_factory,
+    register_model_version,
     session_scope,
 )
 from housing_mlops.api.schemas import (
@@ -97,7 +98,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         init_db(engine)
         app.state.engine = engine
         app.state.session_factory = make_session_factory(engine)
-        app.state.model_service = ModelService.from_model_dir(settings.model_dir)
+        service = ModelService.from_model_dir(settings.model_dir)
+        app.state.model_service = service
+        if service.model is not None:
+            with app.state.session_factory() as session:
+                register_model_version(session, service.model.metadata, source="startup")
         yield
         engine.dispose()
 
