@@ -1,4 +1,4 @@
-from scripts.retrain_summary import render
+from housing_mlops.retraining.summary import render_outcome as render
 
 
 def test_render_with_gate():

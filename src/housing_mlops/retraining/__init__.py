@@ -13,6 +13,7 @@ from housing_mlops.retraining.retrain import (
     load_champion,
     retrain_if_drifted,
 )
+from housing_mlops.retraining.summary import render_outcome
 
 __all__ = [
     "CANDIDATE_PARAMS",
@@ -24,6 +25,7 @@ __all__ = [
     "promote",
     "record_decision",
     "relative_improvement",
+    "render_outcome",
     "retrain_if_drifted",
     "score",
 ]
