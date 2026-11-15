@@ -80,6 +80,23 @@ class ModelVersion(Base):
     source: Mapped[str] = mapped_column(String(32), default="startup")
 
 
+class PromotionDecision(Base):
+    __tablename__ = "promotion_decisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    drift_report_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    candidate_version: Mapped[str] = mapped_column(String(64), index=True)
+    champion_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    metric: Mapped[str] = mapped_column(String(16))
+    candidate_value: Mapped[float] = mapped_column(Float)
+    champion_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    promoted: Mapped[bool] = mapped_column(Boolean, index=True)
+    reason: Mapped[str] = mapped_column(String(255))
+
+
 def make_engine(database_url: str) -> Engine:
     connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
     return create_engine(database_url, pool_pre_ping=True, connect_args=connect_args)
