@@ -2,7 +2,10 @@ import json
 import re
 from datetime import UTC, datetime
 
+from housing_mlops.data.schema import FEATURE_COLUMNS, TARGET_COLUMN
 from housing_mlops.training.metadata import ModelMetadata, new_version
+from housing_mlops.training.reference import compute_reference_statistics
+from tests.conftest import make_housing_frame
 
 
 def sample_metadata() -> ModelMetadata:
@@ -12,12 +15,15 @@ def sample_metadata() -> ModelMetadata:
         created_at="2026-01-01T00:00:00+00:00",
         seed=42,
         params={"alpha": 1.0},
-        feature_columns=["MedInc"],
-        target_column="MedHouseVal",
+        feature_columns=list(FEATURE_COLUMNS),
+        target_column=TARGET_COLUMN,
         training_data_hash="deadbeef",
-        training_rows=10,
-        metrics={"validation": {"rmse": 0.5}, "test": {"rmse": 0.6}},
-        reference_statistics={"MedInc": {"count": 10, "mean": 3.0}},
+        training_rows=200,
+        metrics={
+            "validation": {"rmse": 0.5, "mae": 0.4, "r2": 0.6},
+            "test": {"rmse": 0.6, "mae": 0.45, "r2": 0.55},
+        },
+        reference_statistics=compute_reference_statistics(make_housing_frame()),
     )
 
 
