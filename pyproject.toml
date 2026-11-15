@@ -35,6 +35,7 @@ dev = [
     "pytest==9.2.0",
     "pytest-cov==7.1.0",
     "hypothesis==6.170.15",
+    "httpx2==2.16.0",
     "ruff==0.17.5",
 ]
 
