@@ -10,6 +10,7 @@ from housing_mlops.api.db import (
     DriftReport,
     ModelVersion,
     PredictionLog,
+    PromotionDecision,
     check_connection,
     make_engine,
 )
@@ -65,6 +66,15 @@ def load_reports(database_url: str, _engine: Engine) -> pd.DataFrame:
 def load_versions(database_url: str, _engine: Engine) -> pd.DataFrame:
     with _engine.connect() as connection:
         return pd.read_sql(select(ModelVersion).order_by(ModelVersion.registered_at), connection)
+
+
+@st.cache_data(ttl=10)
+def load_decisions(database_url: str, _engine: Engine) -> pd.DataFrame:
+    with _engine.connect() as connection:
+        return pd.read_sql(
+            select(PromotionDecision).order_by(PromotionDecision.created_at, PromotionDecision.id),
+            connection,
+        )
 
 
 def volume_chart(predictions: pd.DataFrame) -> go.Figure:
@@ -156,6 +166,7 @@ def main() -> None:
     predictions = load_predictions(database_url, engine)
     reports = load_reports(database_url, engine)
     versions = load_versions(database_url, engine)
+    decisions = load_decisions(database_url, engine)
     engine.dispose()
     current = versions[versions["is_current"]].tail(1)
     latest = reports.tail(1)
@@ -230,6 +241,28 @@ def main() -> None:
         )
         if len(versions) > 1:
             st.plotly_chart(rmse_chart(versions), width="stretch")
+
+    st.subheader("Promotion decisions")
+    if decisions.empty:
+        st.info("No retraining run yet. Run `python scripts/retrain.py` after a drift report.")
+    else:
+        st.dataframe(
+            decisions[
+                [
+                    "created_at",
+                    "drift_report_id",
+                    "candidate_version",
+                    "champion_version",
+                    "metric",
+                    "candidate_value",
+                    "champion_value",
+                    "promoted",
+                    "reason",
+                ]
+            ],
+            width="stretch",
+            hide_index=True,
+        )
 
 
 if __name__ == "__main__":
