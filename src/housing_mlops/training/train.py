@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,6 +33,7 @@ class TrainingResult:
     artifact_dir: Path
 
 
+TRACKING_ENV_VAR = "MLFLOW_TRACKING_URI"
 TRACKING_DB_FILENAME = "mlflow.db"
 ARTIFACTS_DIRNAME = "artifacts"
 
@@ -45,7 +47,12 @@ def resolve_tracking_uri(uri: str) -> str:
 
 
 def configure_tracking(tracking_uri: str, experiment_name: str) -> str:
+    previous = os.environ.get(TRACKING_ENV_VAR)
     mlflow.set_tracking_uri(resolve_tracking_uri(tracking_uri))
+    if previous is None:
+        os.environ.pop(TRACKING_ENV_VAR, None)
+    else:
+        os.environ[TRACKING_ENV_VAR] = previous
     if mlflow.get_experiment_by_name(experiment_name) is None:
         artifact_location = None
         if "://" not in tracking_uri:
