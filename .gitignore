@@ -39,3 +39,6 @@ mlartifacts/
 Thumbs.db
 .vscode/
 .idea/
+
+# Retraining outcome files
+outcome/

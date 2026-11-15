@@ -1,3 +1,4 @@
+import os
 import re
 
 import mlflow
@@ -13,6 +14,7 @@ from housing_mlops.training.predict import predict_frame
 from housing_mlops.training.registry import load_model
 from housing_mlops.training.train import (
     EVALUATION_SPLITS,
+    configure_tracking,
     evaluate,
     resolve_tracking_uri,
     train_model,
@@ -144,6 +146,17 @@ def test_resolve_tracking_uri(tmp_path):
     assert resolved.startswith("sqlite:///")
     assert resolved.endswith("/mlruns/mlflow.db")
     assert (tmp_path / "mlruns").is_dir()
+
+
+def test_configure_tracking_does_not_leak_into_the_environment(tmp_path, monkeypatch):
+    monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
+    configure_tracking(str(tmp_path / "mlruns"), EXPERIMENT)
+    assert "MLFLOW_TRACKING_URI" not in os.environ
+    assert mlflow.get_tracking_uri().startswith("sqlite:///")
+
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", "./elsewhere")
+    configure_tracking(str(tmp_path / "mlruns"), EXPERIMENT)
+    assert os.environ["MLFLOW_TRACKING_URI"] == "./elsewhere"
 
 
 def test_artifacts_are_stored_next_to_the_tracking_database(baseline_result, tmp_path):

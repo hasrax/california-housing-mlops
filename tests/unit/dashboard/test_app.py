@@ -42,7 +42,7 @@ def test_empty_database_renders_hints_without_errors(database_url):
     app = run_app()
     assert not app.exception
     assert app.title[0].value == "California Housing MLOps"
-    assert len(app.info) == 3
+    assert len(app.info) == 4
     assert app.metric[0].value == "0"
     assert app.metric[1].value == "none"
 

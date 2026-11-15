@@ -22,10 +22,10 @@ GitHub Actions).
 | API | FastAPI, Pydantic | `/health`, `/predict`, `/model-info`; validates requests and logs every prediction |
 | Prediction store | PostgreSQL, SQLAlchemy | Persists prediction requests, drift reports and model version history |
 | Drift job | numpy, scipy | Compares recent requests against reference statistics with PSI and the KS test; writes a drift report |
-| Retraining | scikit-learn, MLflow | Triggered by drift; trains a candidate and promotes it only if it beats the champion on the test set |
+| Retraining | scikit-learn, MLflow | Triggered by the latest drift report (or forced); trains a candidate, scores candidate and champion on the same held-out test split, promotes only if better, records every decision in `promotion_decisions` |
 | Traffic simulator | httpx | Sends normal then gradually drifted requests to demonstrate the full loop |
 | Dashboard | Streamlit, plotly | Prediction volume, per-feature drift, model version history |
-| CI/CD | GitHub Actions, Docker | Lint, tests against a PostgreSQL service, train-and-quality-gate, Docker build, manual retraining workflow |
+| CI/CD | GitHub Actions, Docker | `ci.yml`: lint, unit and integration tests against a PostgreSQL service, train-and-quality-gate, Docker build plus Compose smoke test. `retrain.yml`: manually triggered retraining with the promotion gate and a job summary |
 
 ## System diagram
 
@@ -43,7 +43,7 @@ flowchart LR
     subgraph online["Online: serving"]
         ART --> API["FastAPI<br/>/health /predict /model-info"]
         SIM["Traffic simulator<br/>normal then drifted"] -->|HTTP| API
-        API -->|SQLAlchemy| DB[("PostgreSQL<br/>predictions<br/>drift_reports<br/>model_versions")]
+        API -->|SQLAlchemy| DB[("PostgreSQL<br/>predictions<br/>drift_reports<br/>model_versions<br/>promotion_decisions")]
     end
 
     subgraph loop["Monitoring and retraining loop"]
@@ -54,7 +54,7 @@ flowchart LR
         SPLIT -->|held-out test set| GATE{"Candidate beats<br/>champion?"}
         RETRAIN --> GATE
         GATE -->|yes: promote| ART
-        GATE -->|no: keep champion| DB
+        GATE -->|decision recorded| DB
     end
 
     DB --> DASH["Streamlit dashboard<br/>volume, drift, versions"]
