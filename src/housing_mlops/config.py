@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://housing:housing@localhost:5432/housing"
     mlflow_tracking_uri: str = "./mlruns"
+    mlflow_experiment: str = "california-housing"
     model_dir: Path = Path("./models")
     data_dir: Path = Path("./data")
     random_seed: int = 42
