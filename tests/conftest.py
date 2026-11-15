@@ -1,9 +1,14 @@
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from housing_mlops.config import Settings
 from housing_mlops.data.schema import ALL_COLUMNS, TARGET_COLUMN
+from housing_mlops.data.split import split_dataset
+
+os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
 
 
 @pytest.fixture
@@ -35,6 +40,16 @@ def make_housing_frame(n_rows: int = 200, seed: int = 0) -> pd.DataFrame:
 @pytest.fixture
 def housing_frame() -> pd.DataFrame:
     return make_housing_frame()
+
+
+@pytest.fixture
+def housing_split():
+    return split_dataset(make_housing_frame(n_rows=600, seed=1), seed=42)
+
+
+@pytest.fixture
+def tracking_uri(tmp_path) -> str:
+    return str(tmp_path / "mlruns")
 
 
 class CountingFetcher:

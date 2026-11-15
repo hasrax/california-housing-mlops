@@ -18,7 +18,7 @@ GitHub Actions).
 | Component | Technology | Responsibility |
 |---|---|---|
 | Data layer | pandas, Pandera | Download and cache the dataset, validate its schema, produce a seeded train/validation/test split |
-| Training pipeline | scikit-learn, MLflow (file store) | Baseline and gradient boosting pipelines, metrics, artifact and metadata files with reference feature statistics |
+| Training pipeline | scikit-learn, MLflow (local SQLite store) | Baseline and gradient boosting pipelines, metrics, artifact and metadata files with reference feature statistics |
 | API | FastAPI, Pydantic | `/health`, `/predict`, `/model-info`; validates requests and logs every prediction |
 | Prediction store | PostgreSQL, SQLAlchemy | Persists prediction requests, drift reports and model version history |
 | Drift job | numpy, scipy | Compares recent requests against reference statistics with PSI and the KS test; writes a drift report |
@@ -36,7 +36,7 @@ flowchart LR
         DL --> VAL["Pandera schema<br/>validation"]
         VAL --> SPLIT["Seeded split<br/>train / val / test"]
         SPLIT --> TRAIN["Training pipeline<br/>baseline + gradient boosting"]
-        TRAIN --> MLF[("MLflow<br/>file store")]
+        TRAIN --> MLF[("MLflow<br/>local SQLite store")]
         TRAIN --> ART["Model artifact<br/>+ metadata.json<br/>(version, metrics, data hash,<br/>reference statistics)"]
     end
 
@@ -89,8 +89,10 @@ sequenceDiagram
   training or model selection, so beating the champion on it is meaningful evidence.
 - **PostgreSQL for everything operational.** Predictions, drift reports and version
   history share one database, which keeps the dashboard and the drift job simple.
-- **MLflow file store, not a tracking server.** One fewer service to run; the
-  tracking directory is enough for a single-developer portfolio and for CI.
+- **MLflow local store, not a tracking server.** One fewer service to run. The
+  tracking data lives in a SQLite file under `mlruns/` with run artifacts beside it,
+  which is enough for a single-developer portfolio and for CI. (MLflow 3.18 has put
+  the older plain-directory backend into maintenance mode.)
 - **Unit tests never touch the network.** The dataset is downloaded once by a
   script; tests use small synthetic frames built in fixtures.
 

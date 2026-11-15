@@ -55,6 +55,9 @@ select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--import-mode=importlib --strict-markers"
+filterwarnings = [
+    "ignore:The ``noload`` loader strategy is deprecated:DeprecationWarning",
+]
 markers = [
     "integration: needs a running PostgreSQL (deselected from the unit job)",
     "dataset: needs the cached California Housing dataset in data/raw",
